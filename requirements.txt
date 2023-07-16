@@ -1,0 +1,6 @@
+pandas==1.4.4
+numpy==1.23.5
+streamlit==1.24.0
+gensim==4.1.2
+spacy==3.5.4
+pyinflect==0.5.1
