@@ -24,3 +24,6 @@
 * spacy
 * pyinflect
 * streamlit
+
+**Демонтрация работы модели**\
+https://englishexercisesgit-z7hsfl1gh5.streamlit.app/
