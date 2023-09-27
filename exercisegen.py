@@ -192,26 +192,30 @@ class ExerciseGen():
         task_description = 'Выберите правильное слово'
 
         # Save all available words with type in 'pos' arg. Later will be choosen only 'q_words' number of words
+        # For each token save into task_object: token text, the index of the beginning and ending of the token in the text
+        save_text = text
         for token in self.__nlp(text):
             if token.pos_ in pos:
-                task_object.append(token.text)
+                index = save_text.find(token.text)
+                task_object.append([token, index, index+len(token.text)])
+                save_text = save_text[:index] + '#'*len(token.text) + save_text[index+len(token.text):]
                 
         # If we found more than 1 word with questioned type, create an exercise
         if len(task_object) >= 1:
-            # Choose random elements in quantity 'q_words'. Place them in the same order as they came into text
-            order = {number:task for number,task in enumerate(task_object)}
+            
+            # Choose random elements in quantity 'q_words'
             task_object = random.sample(task_object, k=min(q_words, len(task_object)))
-            order_list = []
-            for i in task_object:
-                order_list.append(list(order.keys())[list(order.values()).index(i)])
-            order_list, task_object = zip(*sorted(zip(order_list, task_object)))
-            task_object = list(task_object)
-
-            for token in task_object:
-                task_text = task_text.replace(token, '_____')
-                task_answer.append(token)
+            task_object.sort(key=lambda x:x[1])
+            
+            # Replace all random choosen tokens with '_____'
+            lag = 0
+            for token, index_start, index_end in task_object:
+                task_text = task_text[:index_start-lag] + '_____' + task_text[index_end-lag:]
+                lag += len(token.text) - 5 # because 5 underscores
+                task_answer.append(token.text)
                 task_result.append('')
-
+            
+            task_object = [token.text for token, index_start, index_end in task_object]
             task_options = [[token] for token in task_object]
 
             for token in task_options:
@@ -241,7 +245,7 @@ class ExerciseGen():
                 except:
                     pass
 
-                random.shuffle(token)
+                random.shuffle(token)                
                 
         # If there are no words with type in 'pos' array, return empty exercise
         else:
@@ -262,24 +266,22 @@ class ExerciseGen():
                 'task_total': 0
                 }
     
-    # Функция создающая упражнение: пропуск прилагательного, и варианты ответа: 3 формы прилагательного
-    def select_word_adj(self, text):
+
+    def select_word_adj(self, text, q_words=1):
         """Create english exercise: select correct form of adjective.
-        
+
         Parameters
         ----------  
         - text: text with letters for exercise
         - q_words: number of words that will be questioned 
-        
+
         Returns
         -------
         dictionary:
         {'raw' : str, 'task_type' : str, 'task_text' : str, 'task_object' : List(), 'task_options' : List(), 
          'task_answer' : List(), 'task_result' : List(), 'task_description' : str, 'task_total': int}
-        
-        Function has a problem: current version do not have q_words
         """
-        
+
         task_text = text
         task_type = 'select_word_adj'
         task_object = []
@@ -287,25 +289,48 @@ class ExerciseGen():
         task_answer = []
         task_result = []
         task_description = 'Выберите правильную форму прилагательного'
-
+        
+        # Save all available adjectives with 3 form available. Later will be choosen only 'q_words' number of words
+        # For each token save into task_object: token text, the index of the beginning and ending of the token in the text
+        save_text = text
         for token in self.__nlp(text):
             # Find adjective with 3 available forms
             if (token.pos_=='ADJ' and 
                 token._.inflect('JJ') != None and 
                 token._.inflect('JJR') != None and 
                 token._.inflect('JJS') != None):
-                task_text = task_text.replace(token.text, '_____')
-                task_object.append(token.text)
+                index = save_text.find(token.text)
+                task_object.append([token, index, index+len(token.text)])
+                save_text = save_text[:index] + '#'*len(token.text) + save_text[index+len(token.text):]
+        
+        # If we found more than 1 word with questioned type, create an exercise
+        if len(task_object) > 0:
+            
+            # Choose random elements in quantity 'q_words'
+            task_object = random.sample(task_object, k=min(q_words, len(task_object)))
+            task_object.sort(key=lambda x:x[1])
+            
+            # Replace all random choosen tokens with '_____'
+            lag = 0
+            for token, index_start, index_end in task_object:
+                task_text = task_text[:index_start-lag] + '_____' + task_text[index_end-lag:]
+                lag += len(token.text) - 5 # because 5 underscores
                 task_answer.append(token.text)
                 task_result.append('')
+            
+            task_object = [token for token, index_start, index_end in task_object]
+            
+            for token in task_object:
                 task_adv_options = []
                 task_adv_options.append(token._.inflect('JJ'))  # JJ      Adjective
                 task_adv_options.append(token._.inflect('JJR')) # JJR     Adjective, comparative
                 task_adv_options.append(token._.inflect('JJS')) # JJS     Adjective, superlative
                 task_options.append(task_adv_options)
-                
+            
+            task_object = [token.text for token in task_object]
+
         # If text do not contain adjective with 3 available forms, return empty exercise
-        if task_object == []:
+        else:
             task_object = np.nan
             task_options = np.nan
             task_answer = np.nan
@@ -324,7 +349,7 @@ class ExerciseGen():
                 }
     
 
-    def select_word_verb(self, text):
+    def select_word_verb(self, text, q_words=2):
         """Create english exercise: select correct verb form.
         
         Parameters
@@ -337,8 +362,6 @@ class ExerciseGen():
         dictionary:
         {'raw' : str, 'task_type' : str, 'task_text' : str, 'task_object' : List(), 'task_options' : List(), 
          'task_answer' : List(), 'task_result' : List(), 'task_description' : str, 'task_total': int}
-         
-        Function has a problem: current version do not have q_words
         """
         
         task_type = 'select_word_verb'
@@ -348,13 +371,34 @@ class ExerciseGen():
         task_answer = []
         task_result = []
         task_description = 'Выберите правильную форму глагола'
-
+        
+        # Save all available verbs. Later will be choosen only 'q_words' number of words
+        # For each token save into task_object: token text, the index of the beginning and ending of the token in the text
+        save_text = text
         for token in self.__nlp(text):
-            if (token.pos_=='VERB'):
-                task_text = task_text.replace(token.text, '_____')
-                task_object.append(token.text)
+            if token.pos_=='VERB':
+                index = save_text.find(token.text)
+                task_object.append([token, index, index+len(token.text)])
+                save_text = save_text[:index] + '#'*len(token.text) + save_text[index+len(token.text):]
+                
+        # If we found more than 1 word with questioned type, create an exercise
+        if len(task_object) > 0:
+            
+            # Choose random elements in quantity 'q_words'
+            task_object = random.sample(task_object, k=min(q_words, len(task_object)))
+            task_object.sort(key=lambda x:x[1])
+            
+            # Replace all random choosen tokens with '_____'
+            lag = 0
+            for token, index_start, index_end in task_object:
+                task_text = task_text[:index_start-lag] + '_____' + task_text[index_end-lag:]
+                lag += len(token.text) - 5 # because 5 underscores
                 task_answer.append(token.text)
                 task_result.append('')
+            
+            task_object = [token for token, index_start, index_end in task_object]
+            
+            for token in task_object:
                 task_adv_options = []
                 for i in ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ', 'MD']:
                     # VB      Verb, base form
@@ -367,6 +411,8 @@ class ExerciseGen():
                     if token._.inflect(i) not in task_adv_options and token._.inflect(i) != None:
                         task_adv_options.append(token._.inflect(i)) 
                 task_options.append(task_adv_options)
+            
+            task_object = [token.text for token in task_object]
 
         if task_object == []:
             task_object = np.nan
@@ -386,6 +432,269 @@ class ExerciseGen():
                 'task_total': 0
                 }
     
+    
+    def select_sent_word(self, text, pos=['NOUN', 'VERB', 'ADV', 'ADJ'], q_words=1):
+        """Create english exercise: select correct sentence from 3 available. 
+        Some words in incorrect sentences are replaced with synonym or antonym.
+        
+        Parameters
+        ---------- 
+        - text: text with letters for exercise
+        - pos: array with parts' of speech names
+        - q_words: number of words that will be questioned        
+        
+        Returns
+        -------
+        dictionary:
+        {'raw' : str, 'task_type' : str, 'task_text' : str, 'task_object' : List(), 'task_options' : List(), 
+         'task_answer' : List(), 'task_result' : List(), 'task_description' : str, 'task_total': int}
+        
+        Function has a problem: sometimes it returns too similar words
+        """
+        
+        task_type = 'select_sent_word'
+        task_text = text
+        task_object = [text]
+        task_options = [text]
+        task_answer = [text]
+        task_result = ['']
+        task_description = 'Выберите правильное предложение'
+        
+        # Save all tokens and their beginning and ending index
+        save_text = text
+        tokens = []
+        for token in self.__nlp(text):
+            if token.pos_ in pos:
+                index = save_text.find(token.text)
+                tokens.append([token, index, index+len(token.text)])
+                save_text = save_text[:index] + '#'*len(token.text) + save_text[index+len(token.text):]
+                  
+        # If we found more than 1 token, create an exercise. If text is too long, the full text will exceed max size of window, so we create an exercise only for short texts
+        if len(tokens) > 0 and len(text) < 100:
+            
+            # Choose random elements in quantity 'q_words'
+            tokens = random.sample(tokens, k=min(q_words, len(tokens)))
+            tokens.sort(key=lambda x:x[1])
+            
+            # Create 2nd sentence with synonyms and 3rd sentence with antonyms
+            second_sentence = text
+            scnd_lag = 0
+            third_sentence = text
+            thrd_lag = 0
+            i=5
+            for token, start_index, end_index in tokens:
+                m, n = np.random.randint(0, i, 2)
+                synonym = self.__model.most_similar(token.text.lower(), topn=i)[m][0]
+                synonym = synonym.title() if token.text.istitle() else synonym
+                second_sentence = second_sentence[:start_index+scnd_lag] + synonym + second_sentence[end_index+scnd_lag:]
+                scnd_lag += len(synonym) - len(token.text)
+                
+                antonym = self.__model.most_similar(positive = [token.text.lower(), 'bad'],
+                                                negative = ['good'],
+                                                topn=i)[n][0]
+                antonym = antonym.title() if token.text.istitle() else antonym
+                third_sentence = third_sentence[:start_index+thrd_lag] + antonym + third_sentence[end_index+thrd_lag:]
+                thrd_lag += len(antonym) - len(token.text)
+            
+            task_options.append(second_sentence)
+            task_options.append(third_sentence)
+            random.shuffle(task_options)
+
+        else:
+            task_object = np.nan
+            task_options = np.nan
+            task_answer = np.nan
+            task_result = np.nan
+            task_description = np.nan
+
+        return {'raw' : text,
+                'task_type' : task_type,
+                'task_text' : task_text,
+                'task_object' : task_object,
+                'task_options' : task_options,
+                'task_answer' : task_answer,
+                'task_result' : task_result,
+                'task_description' : task_description,
+                'task_total': 0
+                }
+    
+    
+    def select_sent_adj(self, text, q_words=1):
+        """Create english exercise: select correct sentence from 3 available. 2nd and 3rd sentence have adjective in incorrect form.
+        
+        Parameters
+        ---------- 
+        - text: text with letters for exercise
+        - q_words: number of words that will be questioned        
+        
+        Returns
+        -------
+        dictionary:
+        {'raw' : str, 'task_type' : str, 'task_text' : str, 'task_object' : List(), 'task_options' : List(), 
+         'task_answer' : List(), 'task_result' : List(), 'task_description' : str, 'task_total': int}
+        """
+        
+        task_type = 'select_sent_adj'
+        task_text = text
+        task_object = [text]
+        task_options = [text]
+        task_answer = [text]
+        task_result = ['']
+        task_description = 'Выберите предложение с правильной формой прилагательного'
+        
+        # Save all verbs and their beginning and ending index
+        save_text = text
+        adjs = []
+        for token in self.__nlp(text):
+            # Find adjective with 3 available forms
+            if (token.pos_=='ADJ' and 
+                token._.inflect('JJ') != None and 
+                token._.inflect('JJR') != None and 
+                token._.inflect('JJS') != None):
+                index = save_text.find(token.text)
+                adjs.append([token, index, index+len(token.text)])
+                save_text = save_text[:index] + '#'*len(token.text) + save_text[index+len(token.text):]
+        print(adjs)
+        
+        # If we found more than 1 verb, create an exercise. If text is too long, the full text will exceed max size of window, so we create an exercise only for short texts
+        if len(adjs) > 0 and len(text) < 100:
+            
+            # Choose random elements in quantity 'q_words'
+            adjs = random.sample(adjs, k=min(q_words, len(adjs)))
+            adjs.sort(key=lambda x:x[1])
+            print(adjs)
+            
+            adj_forms = []
+            for token, start_index, end_index in adjs:
+                token_adj_forms = []
+                for j in ['JJ', 'JJR', 'JJS']:
+                    # JJ      Adjective
+                    # JJR     Adjective, comparative
+                    # JJS     Adjective, superlative
+                    if token._.inflect(j) != token.text and token._.inflect(j) != None and token._.inflect(j) not in token_adj_forms:
+                        token_adj_forms.append(token._.inflect(j))
+                adj_forms.append(token_adj_forms)
+            print(adj_forms)
+            
+            for _ in range(2):
+                new_word_1 = []
+                new_sent_1 = text
+                lag = 0
+                for i, adj in enumerate(adjs):
+                    token, start_index, end_index = adj
+                    new_word_1.append(random.choice(adj_forms[i]))
+                    adj_forms[i].remove(new_word_1[i])
+                    new_word_1[i].title() if token.text.istitle() else new_word_1[i]
+                    new_sent_1 = new_sent_1[:start_index-lag] + new_word_1[i] + new_sent_1[end_index-lag:]
+                    lag += len(token.text) - len(new_word_1[i])
+                task_options.append(new_sent_1)
+            random.shuffle(task_options)
+            
+        else:
+            task_object = np.nan
+            task_options = np.nan
+            task_answer = np.nan
+            task_result = np.nan
+            task_description = np.nan
+
+        return {'raw' : text,
+                'task_type' : task_type,
+                'task_text' : task_text,
+                'task_object' : task_object,
+                'task_options' : task_options,
+                'task_answer' : task_answer,
+                'task_result' : task_result,
+                'task_description' : task_description,
+                'task_total': 0
+                }
+    
+    
+    def select_sent_verb(self, text, q_words=1):
+        """Create english exercise: select correct sentence from 3 available. 2nd and 3rd sentence have verb in incorrect form.
+        
+        Parameters
+        ---------- 
+        - text: text with letters for exercise
+        - q_words: number of words that will be questioned        
+        
+        Returns
+        -------
+        dictionary:
+        {'raw' : str, 'task_type' : str, 'task_text' : str, 'task_object' : List(), 'task_options' : List(), 
+         'task_answer' : List(), 'task_result' : List(), 'task_description' : str, 'task_total': int}
+        """
+        
+        task_type = 'select_sent_verb'
+        task_text = text
+        task_object = [text]
+        task_options = [text]
+        task_answer = [text]
+        task_result = ['']
+        task_description = 'Выберите предложение с правильной формой глагола'
+        
+        # Save all verbs and their beginning and ending index
+        save_text = text
+        verbs = []
+        for token in self.__nlp(text):
+            if token.pos_=='VERB':
+                index = save_text.find(token.text)
+                verbs.append([token, index, index+len(token.text)])
+                save_text = save_text[:index] + '#'*len(token.text) + save_text[index+len(token.text):]
+        
+        # If we found more than 1 verb, create an exercise. If text is too long, the full text will exceed max size of window, so we create an exercise only for short texts
+        if len(verbs) > 0 and len(text) < 100:
+            
+            # Choose random elements in quantity 'q_words'
+            verbs = random.sample(verbs, k=min(q_words, len(verbs)))
+            verbs.sort(key=lambda x:x[1])
+            
+            verb_forms = []
+            for token, start_index, end_index in verbs:
+                token_verb_forms = []
+                for j in ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ', 'MD']:
+                    # VB      Verb, base form
+                    # VBD     Verb, past tense
+                    # VBG     Verb, gerund or present participle
+                    # VBN     Verb, past participle 
+                    # VBP     Verb, non-3rd person singular present
+                    # VBZ     Verb, 3rd person singular present
+                    # MD      Modal
+                    if token._.inflect(j) != token.text and token._.inflect(j) != None and token._.inflect(j) not in token_verb_forms:
+                        token_verb_forms.append(token._.inflect(j))
+                verb_forms.append(token_verb_forms)
+            
+            for _ in range(2):
+                new_word_1 = []
+                new_sent_1 = text
+                lag = 0
+                for i, verb in enumerate(verbs):
+                    token, start_index, end_index = verb
+                    new_word_1.append(random.choice(verb_forms[i]))
+                    verb_forms[i].remove(new_word_1[i])
+                    new_word_1[i].title() if token.text.istitle() else new_word_1[i]
+                    new_sent_1 = new_sent_1[:start_index-lag] + new_word_1[i] + new_sent_1[end_index-lag:]
+                    lag += len(token.text) - len(new_word_1[i])
+                task_options.append(new_sent_1)
+            random.shuffle(task_options)
+            
+        else:
+            task_object = np.nan
+            task_options = np.nan
+            task_answer = np.nan
+            task_result = np.nan
+            task_description = np.nan
+
+        return {'raw' : text,
+                'task_type' : task_type,
+                'task_text' : task_text,
+                'task_object' : task_object,
+                'task_options' : task_options,
+                'task_answer' : task_answer,
+                'task_result' : task_result,
+                'task_description' : task_description,
+                'task_total': 0
+                }
+        
     
     def select_memb_groups(self, text, q_words=1):
         """Create english exercise: select correct name of part of speech for the part of text highlighted in bold.
@@ -400,8 +709,6 @@ class ExerciseGen():
         dictionary:
         {'raw' : str, 'task_type' : str, 'task_text' : str, 'task_object' : List(), 'task_options' : List(), 
          'task_answer' : List(), 'task_result' : List(), 'task_description' : str, 'task_total': int}
-        
-        Function has a problem: sometimes it returns too similar words
         """
         
         task_type = 'select_memb_groups'
@@ -411,29 +718,31 @@ class ExerciseGen():
         task_answer = []
         task_result = []
         task_description = 'Определите, чем является выделенная фраза'
-
-        # Save all text chunks
+        
+        # Save all chunks
+        save_text = text
         for chunk in self.__nlp(text).noun_chunks:
-            task_object.append(chunk)
+            index = save_text.find(chunk.text)
+            task_object.append([chunk, index, index+len(chunk.text)])
+            save_text = save_text[:index] + '#'*len(chunk.text) + save_text[index+len(chunk.text):]
 
         # Text must have more than one chuck
         if len(task_object) > 1:
-            # Save order of chunks and choose random chunck 
-            order = {number:task for number,task in enumerate(task_object)}
+            
+            # Choose random elements in quantity 'q_words'
             task_object = random.sample(task_object, k=min(q_words, len(task_object)))
-            order_list = []
-            for i in task_object:
-                order_list.append(list(order.keys())[list(order.values()).index(i)])
-            order_list, task_object = zip(*sorted(zip(order_list, task_object)))
-            task_object = list(task_object)
+            task_object.sort(key=lambda x:x[1])
             
             # Highlight chunk in bold
-            for chunk in task_object:
-                task_text = task_text.replace(chunk.text, '**'+chunk.text+'**')
+            lag = 0
+            for chunk, index_start, index_end in task_object:
+                task_text = task_text[:index_start+lag] + '**' + task_text[index_start+lag:index_end+lag]+ '**' + task_text[index_end+lag:]
+                lag += 4 # because 4 asterisks
                 task_answer.append(spacy.explain(chunk.root.dep_))
-                task_object = chunk.text
                 task_options.append('')
                 task_result.append('')
+            
+            task_object = [chunk.text for chunk, index_start, index_end in task_object]
 
             # All chunks from text forms all available task answers
             # If we have less than 3 available answers then fill them with random vaues from dep_list
@@ -479,155 +788,6 @@ class ExerciseGen():
                 }
     
     
-    def select_sent_verb(self, text):
-        """Create english exercise: select correct sentence from 3 available. 2nd and 3rd sentence has verb in incorrect form.
-        
-        Parameters
-        ---------- 
-        - text: text with letters for exercise
-        - q_words: number of words that will be questioned        
-        
-        Returns
-        -------
-        dictionary:
-        {'raw' : str, 'task_type' : str, 'task_text' : str, 'task_object' : List(), 'task_options' : List(), 
-         'task_answer' : List(), 'task_result' : List(), 'task_description' : str, 'task_total': int}
-        
-        Function has a problem: current version do not have q_words
-        """
-        
-        task_type = 'select_sent_verb'
-        task_text = text
-        task_object = [text]
-        task_options = [text]
-        task_answer = [text]
-        task_result = ['']
-        task_description = 'Выберите предложение с правильной формой глагола'
-
-        new_sent_1, new_sent_2 = text, text
-        i=5
-        count_verbs = 0
-        for token in self.__nlp(text):
-            if (token.pos_=='VERB'):
-                # Form list of verb forms which doesn't include original form of verb 
-                verb_forms = []
-                for i in ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ', 'MD']:
-                    # VB      Verb, base form
-                    # VBD     Verb, past tense
-                    # VBG     Verb, gerund or present participle
-                    # VBN     Verb, past participle 
-                    # VBP     Verb, non-3rd person singular present
-                    # VBZ     Verb, 3rd person singular present
-                    # MD      Modal
-                    if token._.inflect(i) != token.text and token._.inflect(i) != None and token._.inflect(i) not in verb_forms:
-                        verb_forms.append(token._.inflect(i))
-
-                new_word_1 = random.choice(verb_forms)
-                new_word_1 = new_word_1.title() if token.text.istitle() else new_word_1
-                new_sent_1 = new_sent_1.replace(token.text, new_word_1)
-                verb_forms.remove(new_word_1)
-                new_word_2 = random.choice(verb_forms)
-                new_word_2 = new_word_1.title() if token.text.istitle() else new_word_2
-                new_sent_2 = new_sent_2.replace(token.text, new_word_2)
-                count_verbs += 1
-
-        if count_verbs > 0 and len(text) < 100:
-            task_options.append(new_sent_1)
-            task_options.append(new_sent_2)
-            random.shuffle(task_options)
-        else:
-            task_object = np.nan
-            task_options = np.nan
-            task_answer = np.nan
-            task_result = np.nan
-            task_description = np.nan
-
-        return {'raw' : text,
-                'task_type' : task_type,
-                'task_text' : task_text,
-                'task_object' : task_object,
-                'task_options' : task_options,
-                'task_answer' : task_answer,
-                'task_result' : task_result,
-                'task_description' : task_description,
-                'task_total': 0
-                }
-    
-    
-    def select_sent_word(self, text, pos=['NOUN', 'VERB', 'ADV', 'ADJ'], q_words=1):
-        """Create english exercise: select correct sentence from 3 available. 
-        Some words in incorrect sentences are replaced with synonym or antonym.
-        
-        Parameters
-        ---------- 
-        - text: text with letters for exercise
-        - pos: array with parts' of speech names
-        - q_words: number of words that will be questioned        
-        
-        Returns
-        -------
-        dictionary:
-        {'raw' : str, 'task_type' : str, 'task_text' : str, 'task_object' : List(), 'task_options' : List(), 
-         'task_answer' : List(), 'task_result' : List(), 'task_description' : str, 'task_total': int}
-        
-        Function has a problem: sometimes it returns too similar words
-        """
-        
-        task_type = 'select_sent_word'
-        task_text = text
-        task_object = [text]
-        task_options = [text]
-        task_answer = [text]
-        task_result = ['']
-        task_description = 'Выберите правильное предложение'
-
-        q_words_fact = 0
-        q_all_words = 0
-        new_sent_1, new_sent_2 = text, text
-        i=5
-        for token in self.__nlp(text):
-            q_all_words += 1
-            if (token.pos_ in pos) and (q_words_fact < q_words):
-                m, n = np.random.randint(0, i, 2)
-
-                new_word_1 = self.__model.most_similar(token.text.lower(), topn=i)[m][0]
-                new_word_2 = self.__model.most_similar(positive = [token.text.lower(), 'bad'],
-                                                negative = ['good'],
-                                                topn=i)[n][0]
-
-                new_word_1 = new_word_1.title() if token.text.istitle() else new_word_1
-                new_word_2 = new_word_2.title() if token.text.istitle() else new_word_2
-
-                new_sent_1 = new_sent_1.replace(token.text, new_word_1)
-                new_sent_2 = new_sent_2.replace(token.text, new_word_2)
-                q_words_fact += 1
-
-        # If sentence has less than 3 tokens or it doesn't cointain word with 'pos' type, return empty exercise
-        if q_words_fact > 0 and q_all_words > 3 and len(text) < 100:
-            task_options.append(new_sent_1)
-            task_options.append(new_sent_2)
-            random.shuffle(task_options)
-        else:
-            task_object = np.nan
-            task_options = np.nan
-            task_answer = np.nan
-            task_result = np.nan
-            task_description = np.nan
-
-        return {'raw' : text,
-                'task_type' : task_type,
-                'task_text' : task_text,
-                'task_object' : task_object,
-                'task_options' : task_options,
-                'task_answer' : task_answer,
-                'task_result' : task_result,
-                'task_description' : task_description,
-                'task_total': 0
-                }
-    
-    
-    # Функция создающая упражнение: нужно ввести с клавиатуры пропущенное слово
-    # Есть выбор, какие части речи пропускать, есть возможность указать долю пропущенных слов, можно использовать подсказку
     def fill_words_in_the_gaps(self, text, pos=['NOUN', 'VERB', 'ADV', 'ADJ'], q_words=1, hint=True):
         """Create english exercise: fill missing word. If hint=True, first letter of missing word in known
         
@@ -653,21 +813,37 @@ class ExerciseGen():
         task_result = []     
         task_description = 'Заполните пропущенное слово (вместе с первой буквой, если была использована подсказка)'
         
-        count_words = 0
-        count_missing_words = 0
+        # Save all tokens and their beginning and ending index
+        save_text = text
+        tokens = []
         for token in self.__nlp(text):
-            count_words += 1
-            if token.pos_ in pos and count_missing_words < q_words:
-                if hint:
-                    task_text = task_text.replace(token.text, token.text[0]+'____')
-                else:
-                    task_text = task_text.replace(token.text, '_____')
-                count_missing_words += 1
+            if token.pos_ in pos:
+                index = save_text.find(token.text)
+                tokens.append([token, index, index+len(token.text)])
+                save_text = save_text[:index] + '#'*len(token.text) + save_text[index+len(token.text):]
+        
+        # If we found more than q_words+3 tokens, create an exercise. If there will be less than q_words+3 tokens, it would be hard to guess words
+        if len(tokens) > q_words+3:
+            
+            # Choose random elements in quantity 'q_words'
+            tokens = random.sample(tokens, k=min(q_words, len(tokens)))
+            tokens.sort(key=lambda x:x[1])
+            
+            lag = 0
+            task_text = text
+            for token, start_index, end_index in tokens:
                 task_object.append(token.text)
                 task_answer.append(token.text)
                 task_result.append('')
+                
+                if hint:
+                    task_text = task_text[:start_index-lag] + token.text[0] + '_____' + task_text[end_index-lag:]
+                    lag += len(token.text) - 6
+                else:
+                    task_text = task_text[:start_index-lag] + '_____' + task_text[end_index-lag:]
+                    lag += len(token.text) - 5
 
-        if count_missing_words < 1:
+        else:
             return {'raw' : text,
                     'task_type' : task_type,
                     'task_text' : text,
@@ -678,17 +854,17 @@ class ExerciseGen():
                     'task_description' : np.nan,
                     'task_total': np.nan
                    }
-        else:
-            return {'raw' : text,
-                    'task_type' : task_type,
-                    'task_text' : task_text,
-                    'task_object' : task_object,
-                    'task_options' : task_options,
-                    'task_answer' : task_answer,
-                    'task_result' : task_result,
-                    'task_description' : task_description,
-                    'task_total': 0
-                   }
+        
+        return {'raw' : text,
+                'task_type' : task_type,
+                'task_text' : task_text,
+                'task_object' : task_object,
+                'task_options' : task_options,
+                'task_answer' : task_answer,
+                'task_result' : task_result,
+                'task_description' : task_description,
+                'task_total': 0
+               }
     
     
     def sent_with_no_exercises(self, text):
@@ -722,8 +898,8 @@ class ExerciseGen():
                       df, 
                       start_row=1, 
                       q_task=20, 
-                      list_of_exercises=[True, True, True, True, True, True, True], 
-                      q_words=[1, 1, 1, 1, 1, 1, 1]):
+                      list_of_exercises=[True, True, True, True, True, True, True, True], 
+                      q_words=[1, 1, 1, 1, 1, 1, 1, 1]):
         """Create english lesson from dataframe. Default lesson starts from 1st sentence and include 20 exercises 
         of all types with only one missing word/chunk into each of them. For each sentence in range creates all possible exercises.
         
@@ -756,22 +932,25 @@ class ExerciseGen():
                     row_tasks.loc[mark] = self.select_word_syn_ant(df.loc[i, 'raw'], q_words=q_words[0])
                     mark += 1
                 if list_of_exercises[1]:
-                    row_tasks.loc[mark] = self.select_word_adj(df.loc[i, 'raw'])
+                    row_tasks.loc[mark] = self.select_word_adj(df.loc[i, 'raw'], q_words=q_words[1])
                     mark += 1
                 if list_of_exercises[2]:
-                    row_tasks.loc[mark] = self.select_word_verb(df.loc[i, 'raw'])
+                    row_tasks.loc[mark] = self.select_word_verb(df.loc[i, 'raw'], q_words=q_words[2])
                     mark += 1
                 if list_of_exercises[3]:
-                    row_tasks.loc[mark] = self.select_memb_groups(df.loc[i, 'raw'], q_words=q_words[3])
+                    row_tasks.loc[mark] = self.select_sent_word(df.loc[i, 'raw'], q_words=q_words[3])
                     mark += 1
                 if list_of_exercises[4]:
-                    row_tasks.loc[mark] = self.select_sent_verb(df.loc[i, 'raw'])
-                    mark += 1
+                    row_tasks.loc[mark] = self.select_sent_adj(df.loc[i, 'raw'], q_words=q_words[4])
+                    mark += 1    
                 if list_of_exercises[5]:
-                    row_tasks.loc[mark] = self.select_sent_word(df.loc[i, 'raw'], q_words=q_words[5])
+                    row_tasks.loc[mark] = self.select_sent_verb(df.loc[i, 'raw'], q_words=q_words[5])
                     mark += 1
                 if list_of_exercises[6]:
-                    row_tasks.loc[mark] = self.fill_words_in_the_gaps(df.loc[i, 'raw'], q_words=q_words[6])
+                    row_tasks.loc[mark] = self.select_memb_groups(df.loc[i, 'raw'], q_words=q_words[6])
+                    mark += 1
+                if list_of_exercises[7]:
+                    row_tasks.loc[mark] = self.fill_words_in_the_gaps(df.loc[i, 'raw'], q_words=q_words[7])
                     mark += 1
                 row_tasks.loc[mark] = self.sent_with_no_exercises(df.loc[i, 'raw'])
                 # Delete all empty exercises and add row number from original dataframe to save the original order

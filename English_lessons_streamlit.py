@@ -91,10 +91,10 @@ if st.session_state.generation_clicked:
     # 'select_word_syn_ant', 'select_word_adv', 'select_word_verb', 'select_memb_groups', 
     # 'select_sent_verb', 'select_sent_word', 'fill_words_in_the_gaps'
     if 'list_of_exercises' not in st.session_state:
-        st.session_state['list_of_exercises'] = [True, True, True, True, True, True, True]
+        st.session_state['list_of_exercises'] = [True, True, True, True, True, True, True, True]
     # Ввод количества пропусков и замен в упражнениях
     if 'q_task_exercises' not in st.session_state:
-        st.session_state['q_task_exercises'] = [1, 1, 1, 1, 1, 1, 1]
+        st.session_state['q_task_exercises'] = [1, 1, 1, 1, 1, 1, 1, 1]
     
     # Ввод строки, начиная с которой будут загружаться упражнения
     st.session_state['start_row'] = st.number_input(label='Введите номер первой строки', 
@@ -113,10 +113,11 @@ if st.session_state.generation_clicked:
     st.session_state['list_of_exercises'][0] = st.checkbox(label='Выбор правильного слова', value=True)
     st.session_state['list_of_exercises'][1] = st.checkbox(label='Выбор правильной формы прилагательного', value=True)
     st.session_state['list_of_exercises'][2] = st.checkbox(label='Выбор правильной формы глагола', value=True)
-    st.session_state['list_of_exercises'][3] = st.checkbox(label='Выбор правильного наименования части речи', value=True)
-    st.session_state['list_of_exercises'][4] = st.checkbox(label='Выбор предложения с нужной формой глагола', value=True)
-    st.session_state['list_of_exercises'][5] = st.checkbox(label='Выбор предложения с правильным словом', value=True)
-    st.session_state['list_of_exercises'][6] = st.checkbox(label='Ввод пропущенного слова', value=True)   
+    st.session_state['list_of_exercises'][3] = st.checkbox(label='Выбор предложения с правильным словом', value=True)
+    st.session_state['list_of_exercises'][4] = st.checkbox(label='Выбор предложения с нужной формой прилагательного', value=True)
+    st.session_state['list_of_exercises'][5] = st.checkbox(label='Выбор предложения с нужной формой глагола', value=True)
+    st.session_state['list_of_exercises'][6] = st.checkbox(label='Выбор правильного наименования части речи', value=True)
+    st.session_state['list_of_exercises'][7] = st.checkbox(label='Ввод пропущенного слова', value=True)   
 
     # Ввод количества пропусков и замен в упражнениях
     st.write('Введите максимальное количество пропускаемых или заменяемых слов')        
@@ -126,13 +127,15 @@ if st.session_state.generation_clicked:
                                                               min_value = 1, max_value = 10, value = 1, step = 1)
     st.session_state['q_task_exercises'][2] = st.number_input(label='Выбор правильной формы глагола', 
                                                               min_value = 1, max_value = 10, value = 1, step = 1)
-    st.session_state['q_task_exercises'][3] = st.number_input(label='Выбор правильного наименования части речи', 
+    st.session_state['q_task_exercises'][3] = st.number_input(label='Выбор предложения с правильным словом', 
                                                               min_value = 1, max_value = 10, value = 1, step = 1)
-    st.session_state['q_task_exercises'][4] = st.number_input(label='Выбор предложения с нужной формой глагола', 
+    st.session_state['q_task_exercises'][4] = st.number_input(label='Выбор предложения с нужной формой прилагательного', 
                                                               min_value = 1, max_value = 10, value = 1, step = 1)
-    st.session_state['q_task_exercises'][5] = st.number_input(label='Выбор предложения с правильным словом', 
+    st.session_state['q_task_exercises'][5] = st.number_input(label='Выбор предложения с нужной формой глагола', 
                                                               min_value = 1, max_value = 10, value = 1, step = 1)
-    st.session_state['q_task_exercises'][6] = st.number_input(label='Ввод пропущенного слова', 
+    st.session_state['q_task_exercises'][6] = st.number_input(label='Выбор правильного наименования части речи', 
+                                                              min_value = 1, max_value = 10, value = 1, step = 1)
+    st.session_state['q_task_exercises'][7] = st.number_input(label='Ввод пропущенного слова', 
                                                               min_value = 1, max_value = 10, value = 1, step = 1)
     
     # Кнопка "Применить настройки"
@@ -176,7 +179,7 @@ if st.session_state.generation_clicked:
                     st.write(str(task['task_text']))
 
                 # Вывод предложений с выбором правильного варианта предложения. Окно selectbox с выбором варианта будет только одно
-                elif task['task_type'] in ['select_sent_verb', 'select_sent_word']:
+                elif task['task_type'] in ['select_sent_word', 'select_sent_adj', 'select_sent_verb']:
                     task['task_result'][0] = st.selectbox('nolabel', 
                                                           ['–––'] + task['task_options'], 
                                                           label_visibility="hidden",
