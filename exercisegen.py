@@ -864,6 +864,80 @@ class ExerciseGen():
                }
     
     
+    def listening_fill_chunks(self, text, q_words=1):
+        """Create english exercise: fill missing chunk
+        
+        Parameters
+        ---------- 
+        - text: text with chunks for exercise
+        - q_words: number of chunks that will be questioned        
+        
+        Returns
+        -------
+        dictionary:
+        {'raw' : str, 'task_type' : str, 'task_text' : str, 'task_object' : List(), 'task_options' : List(), 
+         'task_answer' : List(), 'task_result' : List(), 'task_description' : str, 'task_total': int}
+        
+        Function has a problem: sometimes it returns too similar words
+        """
+        
+        task_type = 'listening_fill_chunks'
+        task_text = text     
+        task_object = []     
+        task_options = []    
+        task_answer = []     
+        task_result = []     
+        task_description = 'Прослушайте аудиозапись и заполните пропущенное словосочетание'
+        
+        # Save all chunks
+        save_text = text
+        for chunk in self.__nlp(text).noun_chunks:
+            index = save_text.find(chunk.text)
+            task_object.append([chunk, index, index+len(chunk.text)])
+            save_text = save_text[:index] + '#'*len(chunk.text) + save_text[index+len(chunk.text):]
+        
+        # If we found more than 1 chunk, create an exercise. If there will be less than 1 chunk, it would be hard to guess words
+        if len(task_object) > 1:
+            
+            # Choose random elements in quantity 'q_words'
+            task_object = random.sample(task_object, k=min(q_words, len(task_object)))
+            task_object.sort(key=lambda x:x[1])
+            
+            lag = 0
+            task_text = text
+            for chunk, start_index, end_index in task_object:
+                task_answer.append(chunk.text)
+                task_result.append('')
+                task_text = task_text[:start_index-lag] + '_____' + task_text[end_index-lag:]
+                lag += len(chunk.text) - 5
+            
+            task_object = [chunk.text for chunk, start_index, end_index in task_object]
+
+        # If text has only one chunk, return empty exercise
+        else:
+            return {'raw' : text,
+                    'task_type' : task_type,
+                    'task_text' : text,
+                    'task_object' : np.nan,
+                    'task_options' : np.nan,
+                    'task_answer' : np.nan,
+                    'task_result' : np.nan,
+                    'task_description' : np.nan,
+                    'task_total': np.nan
+                   }
+        
+        return {'raw' : text,
+                'task_type' : task_type,
+                'task_text' : task_text,
+                'task_object' : task_object,
+                'task_options' : task_options,
+                'task_answer' : task_answer,
+                'task_result' : task_result,
+                'task_description' : task_description,
+                'task_total': 0
+               }
+    
+    
     def set_word_order(self, text):
         """Create english exercise: all the words in sentence are mixed up
         
@@ -939,8 +1013,8 @@ class ExerciseGen():
                       df, 
                       start_row=1, 
                       q_task=20, 
-                      list_of_exercises=[True, True, True, True, True, True, True, True, True], 
-                      q_words=[1, 1, 1, 1, 1, 1, 1, 1]):
+                      list_of_exercises=[True, True, True, True, True, True, True, True, True, True], 
+                      q_words=[1, 1, 1, 1, 1, 1, 1, 1, 1]):
         """Create english lesson from dataframe. Default lesson starts from 1st sentence and include 20 exercises 
         of all types with only one missing word/chunk into each of them. For each sentence in range creates all possible exercises.
         
@@ -994,6 +1068,9 @@ class ExerciseGen():
                     row_tasks.loc[mark] = self.fill_words_in_the_gaps(df.loc[i, 'raw'], q_words=q_words[7])
                     mark += 1
                 if list_of_exercises[8]:
+                    row_tasks.loc[mark] = self.listening_fill_chunks(df.loc[i, 'raw'], q_words=q_words[8])
+                    mark += 1  
+                if list_of_exercises[9]:
                     row_tasks.loc[mark] = self.set_word_order(df.loc[i, 'raw'])
                     mark += 1
                 row_tasks.loc[mark] = self.sent_with_no_exercises(df.loc[i, 'raw'])

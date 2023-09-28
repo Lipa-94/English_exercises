@@ -1,4 +1,5 @@
 import streamlit as st
+import gtts 
 from exercisegen import ExerciseGen
 
 st.header('Генератор упражнений по английскому языку')
@@ -91,10 +92,10 @@ if st.session_state.generation_clicked:
     # 'select_word_syn_ant', 'select_word_adv', 'select_word_verb', 'select_memb_groups', 
     # 'select_sent_verb', 'select_sent_word', 'fill_words_in_the_gaps'
     if 'list_of_exercises' not in st.session_state:
-        st.session_state['list_of_exercises'] = [True, True, True, True, True, True, True, True, True]
+        st.session_state['list_of_exercises'] = [True, True, True, True, True, True, True, True, True, True]
     # Ввод количества пропусков и замен в упражнениях
     if 'q_task_exercises' not in st.session_state:
-        st.session_state['q_task_exercises'] = [1, 1, 1, 1, 1, 1, 1, 1]
+        st.session_state['q_task_exercises'] = [1, 1, 1, 1, 1, 1, 1, 1, 1]
     
     # Ввод строки, начиная с которой будут загружаться упражнения
     st.session_state['start_row'] = st.number_input(label='Введите номер первой строки', 
@@ -118,7 +119,8 @@ if st.session_state.generation_clicked:
     st.session_state['list_of_exercises'][5] = st.checkbox(label='Выбор предложения с нужной формой глагола', value=True)
     st.session_state['list_of_exercises'][6] = st.checkbox(label='Выбор правильного наименования части речи', value=True)
     st.session_state['list_of_exercises'][7] = st.checkbox(label='Ввод пропущенного слова', value=True)
-    st.session_state['list_of_exercises'][8] = st.checkbox(label='Расстановка слов в правильном порядке', value=True) 
+    st.session_state['list_of_exercises'][8] = st.checkbox(label='Ввод пропущенного текста на основе аудиозаписи', value=True) 
+    st.session_state['list_of_exercises'][9] = st.checkbox(label='Расстановка слов в правильном порядке', value=True) 
 
     # Ввод количества пропусков и замен в упражнениях
     st.write('Введите максимальное количество пропускаемых или заменяемых слов')        
@@ -137,6 +139,8 @@ if st.session_state.generation_clicked:
     st.session_state['q_task_exercises'][6] = st.number_input(label='Выбор правильного наименования части речи', 
                                                               min_value = 1, max_value = 10, value = 1, step = 1)
     st.session_state['q_task_exercises'][7] = st.number_input(label='Ввод пропущенного слова', 
+                                                              min_value = 1, max_value = 10, value = 1, step = 1)
+    st.session_state['q_task_exercises'][8] = st.number_input(label='Ввод пропущенного текста на основе аудиозаписи', 
                                                               min_value = 1, max_value = 10, value = 1, step = 1)
     
     # Кнопка "Применить настройки"
@@ -187,9 +191,17 @@ if st.session_state.generation_clicked:
                                                           key = str(i))
 
                 # Вывод предложений с вводом пропущеного текста. Текстовых полей будет выводится столько, сколько пропущено полей
-                elif task['task_type'] == 'fill_words_in_the_gaps':
+                elif task['task_type'] in ['fill_words_in_the_gaps', 'listening_fill_chunks']:
                     col1, col2 = st.columns(2)
                     with col1:
+                        if task['task_type'] == 'listening_fill_chunks':
+                            audiofile_name = 'audiofile_'+str(i)+'.mp3'
+                            if audiofile_name not in st.session_state:
+                                audiofile = gtts.gTTS(task['raw'])
+                                st.session_state[audiofile_name] = audiofile.save(audiofile_name)
+                            st.audio(audiofile_name)
+                                
+                            
                         st.write(str(task['task_text']))
                     with col2:
                         for j in range(len(task['task_answer'])):
