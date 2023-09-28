@@ -1,8 +1,7 @@
-pandas==1.4.4
-numpy==1.23.5
-streamlit==1.24.0
-gtts==2.3.2
-gensim==4.1.2
+pandas==2.1.1
+numpy==1.26.0
+streamlit==1.27.0
+gensim==4.3.2
 pyinflect==0.5.1
 spacy>=3.0.0,<4.0.0
 en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.4.0/en_core_web_sm-3.4.0-py3-none-any.whl

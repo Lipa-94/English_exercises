@@ -34,3 +34,8 @@
 
 **Демонтрация работы модели**\
 https://englishexercisesgit-z7hsfl1gh5.streamlit.app/
+
+**Описание файлов**
+* English_lessons_streamlit.py - код, отвечающий за вывод формы на базе streamlit
+* exercisegen.py - код, отвечающий за генерацию датасета с упражнениями
+* "Little_Red_Cap_Jacob_and_Wilhelm_Grimm.txt" и "Little_Red_Riding_Hood_Charles_Perrault.txt" - текстовые файлы для тестирования модели

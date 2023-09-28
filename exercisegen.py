@@ -1033,6 +1033,9 @@ class ExerciseGen():
         pd.DataFrame with english exercises
         """
         
+        start_row = min(start_row, len(df)-1)
+        q_task = min(q_task, len(df)-start_row)
+        
         q_task_fact = 0
         lesson_tasks = pd.DataFrame(columns=['row_num', 'raw', 'task_type', 'task_text', 'task_object', 'task_options', 
                                       'task_answer', 'task_result', 'task_description', 'task_total'])

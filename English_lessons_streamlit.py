@@ -5,8 +5,7 @@ from exercisegen import ExerciseGen
 st.header('Генератор упражнений по английскому языку')
 
 #############################################################################################
-# Загрузка текста. 
-# Объявляем три опции: загрузка файла, вставка текста, использование стандартного текста
+# Загрузка текста. Объявляем три опции: загрузка файла, вставка текста, использование стандартного текста
 st.subheader('Загрузите текстовый файл или вставьте в поле текст для создания упражнения')
 
 if 'lesson_file' not in st.session_state:
@@ -43,8 +42,53 @@ The wolf ran as fast as he could, taking the shortest path, and the little girl 
 
 "Who's there?"'''
     st.write(st.session_state['lesson_default_text'])
-
     
+    
+################################################################
+# Блок с настройками
+with st.expander('Настройка упражнений для урока'):
+    
+    st.write('**Выберите перечень предложений для генерации упражнений**')
+    col1, col2 = st.columns(2)
+    # Ввод строки, начиная с которой будут загружаться упражнения
+    with col1:
+        if 'start_row' not in st.session_state:
+            st.session_state['start_row'] = 1
+        st.session_state['start_row'] = st.slider(label='Введите номер первой строки', 
+                                                  min_value = 1, max_value = 20, value = 1, step = 1)
+    # Ввод количества упражнений
+    with col2:
+        if 'q_task' not in st.session_state:
+            st.session_state['q_task'] = 20
+        st.session_state['q_task'] = st.slider(label='Введите количество упражнений', 
+                                               min_value = 1, max_value = 50, value = 20, step = 1)
+    
+    # Ввод перечня типов упражнений
+    exercise_types = ['Выбор правильного слова', 
+                      'Выбор правильной формы прилагательного',
+                      'Выбор правильной формы глагола',
+                      'Выбор предложения с правильным словом',
+                      'Выбор предложения с нужной формой прилагательного', 
+                      'Выбор предложения с нужной формой глагола', 
+                      'Выбор правильного наименования части речи',
+                      'Ввод пропущенного слова',
+                      'Ввод пропущенного текста на основе аудиозаписи', 
+                      'Расстановка слов в правильном порядке']
+    st.write('**Выберите типы упражнений для тестирования**')
+    if 'list_of_exercises' not in st.session_state:
+        st.session_state['list_of_exercises'] = [True, True, True, True, True, True, True, True, True, True]
+    for i in range(len(exercise_types)):
+        st.session_state['list_of_exercises'][i] = st.checkbox(label=exercise_types[i], value=True)
+
+    # Ввод количества пропусков и замен в упражнениях
+    st.write('**Введите максимальное количество пропускаемых или заменяемых слов**')
+    if 'q_task_exercises' not in st.session_state:
+        st.session_state['q_task_exercises'] = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+    for i in range(len(exercise_types)-1):
+        st.session_state['q_task_exercises'][i] = st.slider(label=exercise_types[i], min_value = 1, max_value = 10, value = 1, step = 1)
+
+        
+################################################################     
 # Кнопка генерации упражнений. Проверяем, что именно было загружено, загружаем и обрабатываем данные
 if 'generation_clicked' not in st.session_state:
     st.session_state['generation_clicked'] = False
@@ -59,104 +103,33 @@ if st.session_state.generation_clicked:
     if st.session_state['lesson_file'] is not None and st.session_state['lesson_text'] != '':
         st.write('Выберите только одну опцию: либо загрузка файла, либо вставка текста в поле')
     elif st.session_state['lesson_file'] is not None:
-        with st.spinner('Обработка файла...'):
-            if 'ex_gen' not in st.session_state:
+        if 'ex_gen' not in st.session_state:
+            with st.spinner('Обработка файла...'):
                 st.session_state['ex_gen'] = ExerciseGen()
-            st.session_state['dataset'] = st.session_state['ex_gen'].open_file(st.session_state['lesson_file'])
-            st.session_state['dataset'] = st.session_state['ex_gen'].beautify_text(st.session_state['dataset'])
+                st.session_state['dataset'] = st.session_state['ex_gen'].open_file(st.session_state['lesson_file'])
+                st.session_state['dataset'] = st.session_state['ex_gen'].beautify_text(st.session_state['dataset'])
     elif st.session_state['lesson_text'] != '':
-        with st.spinner('Обработка загруженного текста...'):
-            if 'ex_gen' not in st.session_state:
+        if 'ex_gen' not in st.session_state:
+            with st.spinner('Обработка загруженного текста...'):
                 st.session_state['ex_gen'] = ExerciseGen()
-            st.session_state['dataset'] = st.session_state['ex_gen'].open_text(st.session_state['lesson_text'])
-            st.session_state['dataset'] = st.session_state['ex_gen'].beautify_text(st.session_state['dataset'])
+                st.session_state['dataset'] = st.session_state['ex_gen'].open_text(st.session_state['lesson_text'])
+                st.session_state['dataset'] = st.session_state['ex_gen'].beautify_text(st.session_state['dataset'])
     elif st.session_state['lesson_file'] is None and st.session_state['lesson_text'] == '':
-        with st.spinner('Обработка стандартного текста...'):
-            if 'ex_gen' not in st.session_state:
+        if 'ex_gen' not in st.session_state:
+            with st.spinner('Обработка стандартного текста...'):
                 st.session_state['ex_gen'] = ExerciseGen()
-            st.session_state['dataset'] = st.session_state['ex_gen'].open_text(st.session_state['lesson_default_text'])
-            st.session_state['dataset'] = st.session_state['ex_gen'].beautify_text(st.session_state['dataset'])
+                st.session_state['dataset'] = st.session_state['ex_gen'].open_text(st.session_state['lesson_default_text'])
+                st.session_state['dataset'] = st.session_state['ex_gen'].beautify_text(st.session_state['dataset'])
     else:
         pass
-
-#############################################################################################
-    # Блок с настройками
-    st.subheader('Настройка упражнений для урока')
-    # Ввод строки, начиная с которой будут загружаться упражнения
-    if 'start_row' not in st.session_state:
-        st.session_state['start_row'] = 1
-    # Ввод количества упражнений  
-    if 'q_task' not in st.session_state:
-        st.session_state['q_task'] = 20
-    # Ввод перечня типов упражнений. Всего 7 доступных типов: 
-    # 'select_word_syn_ant', 'select_word_adv', 'select_word_verb', 'select_memb_groups', 
-    # 'select_sent_verb', 'select_sent_word', 'fill_words_in_the_gaps'
-    if 'list_of_exercises' not in st.session_state:
-        st.session_state['list_of_exercises'] = [True, True, True, True, True, True, True, True, True, True]
-    # Ввод количества пропусков и замен в упражнениях
-    if 'q_task_exercises' not in st.session_state:
-        st.session_state['q_task_exercises'] = [1, 1, 1, 1, 1, 1, 1, 1, 1]
     
-    # Ввод строки, начиная с которой будут загружаться упражнения
-    st.session_state['start_row'] = st.number_input(label='Введите номер первой строки', 
-                                                    min_value = 1, 
-                                                    max_value = len(st.session_state['dataset']) - 1,
-                                                    value = 1,
-                                                    step = 1)
-    # Ввод количества упражнений
-    st.session_state['q_task'] = st.number_input(label='Введите количество упражнений', 
-                                                 min_value = 1, 
-                                                 max_value = len(st.session_state['dataset']) - 1,
-                                                 value = min(20, len(st.session_state['dataset'])-1),
-                                                 step = 1)
-    # Ввод перечня типов упражнений
-    st.write('Выберите типы упражнений для тестирования')
-    st.session_state['list_of_exercises'][0] = st.checkbox(label='Выбор правильного слова', value=True)
-    st.session_state['list_of_exercises'][1] = st.checkbox(label='Выбор правильной формы прилагательного', value=True)
-    st.session_state['list_of_exercises'][2] = st.checkbox(label='Выбор правильной формы глагола', value=True)
-    st.session_state['list_of_exercises'][3] = st.checkbox(label='Выбор предложения с правильным словом', value=True)
-    st.session_state['list_of_exercises'][4] = st.checkbox(label='Выбор предложения с нужной формой прилагательного', value=True)
-    st.session_state['list_of_exercises'][5] = st.checkbox(label='Выбор предложения с нужной формой глагола', value=True)
-    st.session_state['list_of_exercises'][6] = st.checkbox(label='Выбор правильного наименования части речи', value=True)
-    st.session_state['list_of_exercises'][7] = st.checkbox(label='Ввод пропущенного слова', value=True)
-    st.session_state['list_of_exercises'][8] = st.checkbox(label='Ввод пропущенного текста на основе аудиозаписи', value=True) 
-    st.session_state['list_of_exercises'][9] = st.checkbox(label='Расстановка слов в правильном порядке', value=True) 
-
-    # Ввод количества пропусков и замен в упражнениях
-    st.write('Введите максимальное количество пропускаемых или заменяемых слов')        
-    st.session_state['q_task_exercises'][0] = st.number_input(label='Выбор правильного слова', 
-                                                              min_value = 1, max_value = 10, value = 1, step = 1)
-    st.session_state['q_task_exercises'][1] = st.number_input(label='Выбор правильной формы прилагательного', 
-                                                              min_value = 1, max_value = 10, value = 1, step = 1)
-    st.session_state['q_task_exercises'][2] = st.number_input(label='Выбор правильной формы глагола', 
-                                                              min_value = 1, max_value = 10, value = 1, step = 1)
-    st.session_state['q_task_exercises'][3] = st.number_input(label='Выбор предложения с правильным словом', 
-                                                              min_value = 1, max_value = 10, value = 1, step = 1)
-    st.session_state['q_task_exercises'][4] = st.number_input(label='Выбор предложения с нужной формой прилагательного', 
-                                                              min_value = 1, max_value = 10, value = 1, step = 1)
-    st.session_state['q_task_exercises'][5] = st.number_input(label='Выбор предложения с нужной формой глагола', 
-                                                              min_value = 1, max_value = 10, value = 1, step = 1)
-    st.session_state['q_task_exercises'][6] = st.number_input(label='Выбор правильного наименования части речи', 
-                                                              min_value = 1, max_value = 10, value = 1, step = 1)
-    st.session_state['q_task_exercises'][7] = st.number_input(label='Ввод пропущенного слова', 
-                                                              min_value = 1, max_value = 10, value = 1, step = 1)
-    st.session_state['q_task_exercises'][8] = st.number_input(label='Ввод пропущенного текста на основе аудиозаписи', 
-                                                              min_value = 1, max_value = 10, value = 1, step = 1)
     
-    # Кнопка "Применить настройки"
-    if 'settings_clicked' not in st.session_state:
-        st.session_state['settings_clicked'] = False
-    def settings_click_button():
-        st.session_state['settings_clicked'] = True
-    st.button('Применить настройки', on_click=settings_click_button)
-    
-    if st.session_state.settings_clicked:
+    #######################################################################################################
+    # Генерация упражнений
+    if st.session_state['dataset'] is not None:
         with st.spinner('Генерация упражнений...'):
-    
-#############################################################################################
-
-        # Генерация упражнений
-        # Создаем упражнения
+            
+            # Создаем упражнения
             if 'lesson_dataset' not in st.session_state:
                 st.session_state['lesson_dataset'] = st.session_state['ex_gen'].create_lesson(st.session_state['dataset'], 
                     start_row=st.session_state['start_row'], 
@@ -165,10 +138,9 @@ if st.session_state.generation_clicked:
                     q_words=st.session_state['q_task_exercises'])
             if 'default_lesson' not in st.session_state:
                 st.session_state['default_lesson'] = st.session_state['ex_gen'].create_default_lesson(st.session_state['lesson_dataset'])
-
-            st.subheader('Упражнения по английскому')
-
+                
             # Выводим упражнения на экран и записываем ответы
+            st.subheader('Упражнения по английскому')
             count_tasks = 1
             for i in range(len(st.session_state['default_lesson'])):
 
@@ -176,7 +148,7 @@ if st.session_state.generation_clicked:
 
                 # Вывод номера задания для всех предложений, для которых удалось создать упражнение
                 if task['task_type'] != 'sent_with_no_exercises':
-                    st.write('Задание #'+ str(count_tasks) + ': ' +str(task['task_description']))
+                    st.write('**Задание #'+ str(count_tasks) + ':** ' +str(task['task_description']))
                     count_tasks += 1
 
                 # Вывод предложений, для которых не удалось создать упражнение
@@ -200,8 +172,6 @@ if st.session_state.generation_clicked:
                                 audiofile = gtts.gTTS(task['raw'])
                                 st.session_state[audiofile_name] = audiofile.save(audiofile_name)
                             st.audio(audiofile_name)
-                                
-                            
                         st.write(str(task['task_text']))
                     with col2:
                         for j in range(len(task['task_answer'])):
@@ -217,9 +187,9 @@ if st.session_state.generation_clicked:
                                                             label_visibility="hidden",
                                                             placeholder='Выберите слово из выпадающего списка',
                                                             key = str(i))
-
+                    
+                # Вывод предложений с выбором правильного слова
                 else:
-                    # Вывод предложений с выбором правильного слова
                     col1, col2 = st.columns(2)
                     with col1:
                         st.write(str(task['task_text']))
@@ -232,7 +202,8 @@ if st.session_state.generation_clicked:
                                                                   key = str(i) + '_' + str(j))
                 '---'          
 
-#############################################################################################
+                
+            #######################################################################################################
             # Кнопка вывода результата теста
             if 'result_clicked' not in st.session_state:
                 st.session_state['result_clicked'] = False
