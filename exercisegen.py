@@ -170,7 +170,7 @@ class ExerciseGen():
         
         Parameters
         ---------- 
-        - text : str - text with letters for exercise
+        - text : str - text with words for exercise
         - pos : list() - array with parts' of speech names. Default variant contain noun, verb, advective and adverb
         - q_words : int - number of words that will be questioned   
         
@@ -272,7 +272,7 @@ class ExerciseGen():
 
         Parameters
         ----------  
-        - text: text with letters for exercise
+        - text: text with words for exercise
         - q_words: number of words that will be questioned 
 
         Returns
@@ -354,7 +354,7 @@ class ExerciseGen():
         
         Parameters
         ---------- 
-        - text: text with letters for exercise
+        - text: text with words for exercise
         - q_words: number of words that will be questioned
         
         Returns
@@ -439,7 +439,7 @@ class ExerciseGen():
         
         Parameters
         ---------- 
-        - text: text with letters for exercise
+        - text: text with words for exercise
         - pos: array with parts' of speech names
         - q_words: number of words that will be questioned        
         
@@ -524,7 +524,7 @@ class ExerciseGen():
         
         Parameters
         ---------- 
-        - text: text with letters for exercise
+        - text: text with words for exercise
         - q_words: number of words that will be questioned        
         
         Returns
@@ -554,7 +554,6 @@ class ExerciseGen():
                 index = save_text.find(token.text)
                 adjs.append([token, index, index+len(token.text)])
                 save_text = save_text[:index] + '#'*len(token.text) + save_text[index+len(token.text):]
-        print(adjs)
         
         # If we found more than 1 verb, create an exercise. If text is too long, the full text will exceed max size of window, so we create an exercise only for short texts
         if len(adjs) > 0 and len(text) < 100:
@@ -562,7 +561,6 @@ class ExerciseGen():
             # Choose random elements in quantity 'q_words'
             adjs = random.sample(adjs, k=min(q_words, len(adjs)))
             adjs.sort(key=lambda x:x[1])
-            print(adjs)
             
             adj_forms = []
             for token, start_index, end_index in adjs:
@@ -574,7 +572,6 @@ class ExerciseGen():
                     if token._.inflect(j) != token.text and token._.inflect(j) != None and token._.inflect(j) not in token_adj_forms:
                         token_adj_forms.append(token._.inflect(j))
                 adj_forms.append(token_adj_forms)
-            print(adj_forms)
             
             for _ in range(2):
                 new_word_1 = []
@@ -614,7 +611,7 @@ class ExerciseGen():
         
         Parameters
         ---------- 
-        - text: text with letters for exercise
+        - text: text with words for exercise
         - q_words: number of words that will be questioned        
         
         Returns
@@ -701,7 +698,7 @@ class ExerciseGen():
         
         Parameters
         ---------- 
-        - text: text with letters for exercise
+        - text: text with words for exercise
         - q_words: number of text parts that will be questioned        
         
         Returns
@@ -717,7 +714,7 @@ class ExerciseGen():
         task_options = []
         task_answer = []
         task_result = []
-        task_description = 'Определите, чем является выделенная фраза'
+        task_description = 'Определите, чем является выделенное словосочетание'
         
         # Save all chunks
         save_text = text
@@ -793,7 +790,7 @@ class ExerciseGen():
         
         Parameters
         ---------- 
-        - text: text with letters for exercise
+        - text: text with words for exercise
         - pos: array with parts' of speech names
         - q_words: number of words that will be questioned
         - hint: if True, first letter of missing word will be shown. If False - first letter will be hidden
@@ -867,6 +864,50 @@ class ExerciseGen():
                }
     
     
+    def set_word_order(self, text):
+        """Create english exercise: all the words in sentence are mixed up
+        
+        Parameters
+        ---------- 
+        - text: text with words for exercise  
+        
+        Returns
+        -------
+        dictionary:
+        {'raw' : str, 'task_type' : str, 'task_text' : List(), 'task_object' : List(), 'task_options' : List(), 
+         'task_answer' : List(), 'task_result' : List(), 'task_description' : str, 'task_total': int}
+        """
+        
+        task_type = 'set_word_order'
+        task_text = text.split(' ')
+        random.shuffle(task_text)
+        task_object = []
+        task_options = []
+        task_answer = [text.split(' ')]
+        task_result = ['']
+        task_description = 'Расставьте слова в правильном порядке'
+       
+        # Do not generate exersice if there to small or too large number of words
+        if  len(task_text) < 3 or len(task_text) > 10:
+            task_text = np.nan
+            task_object = np.nan
+            task_options = np.nan
+            task_answer = np.nan
+            task_result = np.nan
+            task_description = np.nan
+
+        return {'raw' : text,
+                'task_type' : task_type,
+                'task_text' : task_text,
+                'task_object' : task_object,
+                'task_options' : task_options,
+                'task_answer' : task_answer,
+                'task_result' : task_result,
+                'task_description' : task_description,
+                'task_total': 0
+                }
+    
+    
     def sent_with_no_exercises(self, text):
         """Create empty english exercise.
         We use this type of exercise only then no one else type of exercise is available
@@ -898,7 +939,7 @@ class ExerciseGen():
                       df, 
                       start_row=1, 
                       q_task=20, 
-                      list_of_exercises=[True, True, True, True, True, True, True, True], 
+                      list_of_exercises=[True, True, True, True, True, True, True, True, True], 
                       q_words=[1, 1, 1, 1, 1, 1, 1, 1]):
         """Create english lesson from dataframe. Default lesson starts from 1st sentence and include 20 exercises 
         of all types with only one missing word/chunk into each of them. For each sentence in range creates all possible exercises.
@@ -952,6 +993,9 @@ class ExerciseGen():
                 if list_of_exercises[7]:
                     row_tasks.loc[mark] = self.fill_words_in_the_gaps(df.loc[i, 'raw'], q_words=q_words[7])
                     mark += 1
+                if list_of_exercises[8]:
+                    row_tasks.loc[mark] = self.set_word_order(df.loc[i, 'raw'])
+                    mark += 1
                 row_tasks.loc[mark] = self.sent_with_no_exercises(df.loc[i, 'raw'])
                 # Delete all empty exercises and add row number from original dataframe to save the original order
                 row_tasks = row_tasks[row_tasks['raw'].isna() == False]
@@ -1001,6 +1045,7 @@ class ExerciseGen():
         """
         
         new_df = df[['task_description', 'task_text', 'task_answer', 'task_result', 'task_total']]
+        new_df['task_text'] = new_df['task_text'].astype('str')
         new_df['task_answer'] = new_df['task_answer'].astype('str')
         new_df['task_result'] = new_df['task_result'].astype('str')
         new_df.columns = ['Тип задания', 'Текст упражнения', 'Правильный ответ', 'Ответ на задание', 'Результат']
@@ -1064,7 +1109,7 @@ class ExerciseGen():
                                task_with_mistakes + 
                                '. В следующий раз попробуй сделать упор именно на такие упражнения')
         
-        return result_info + "\n" + result_comment + "\n" + result_mistakes
+        return result_info, result_comment, result_mistakes
     
     
     def display_dataset(self, df):

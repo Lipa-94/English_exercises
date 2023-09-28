@@ -91,7 +91,7 @@ if st.session_state.generation_clicked:
     # 'select_word_syn_ant', 'select_word_adv', 'select_word_verb', 'select_memb_groups', 
     # 'select_sent_verb', 'select_sent_word', 'fill_words_in_the_gaps'
     if 'list_of_exercises' not in st.session_state:
-        st.session_state['list_of_exercises'] = [True, True, True, True, True, True, True, True]
+        st.session_state['list_of_exercises'] = [True, True, True, True, True, True, True, True, True]
     # Ввод количества пропусков и замен в упражнениях
     if 'q_task_exercises' not in st.session_state:
         st.session_state['q_task_exercises'] = [1, 1, 1, 1, 1, 1, 1, 1]
@@ -117,7 +117,8 @@ if st.session_state.generation_clicked:
     st.session_state['list_of_exercises'][4] = st.checkbox(label='Выбор предложения с нужной формой прилагательного', value=True)
     st.session_state['list_of_exercises'][5] = st.checkbox(label='Выбор предложения с нужной формой глагола', value=True)
     st.session_state['list_of_exercises'][6] = st.checkbox(label='Выбор правильного наименования части речи', value=True)
-    st.session_state['list_of_exercises'][7] = st.checkbox(label='Ввод пропущенного слова', value=True)   
+    st.session_state['list_of_exercises'][7] = st.checkbox(label='Ввод пропущенного слова', value=True)
+    st.session_state['list_of_exercises'][8] = st.checkbox(label='Расстановка слов в правильном порядке', value=True) 
 
     # Ввод количества пропусков и замен в упражнениях
     st.write('Введите максимальное количество пропускаемых или заменяемых слов')        
@@ -196,9 +197,17 @@ if st.session_state.generation_clicked:
                                                                    value='–––', 
                                                                    label_visibility="hidden",
                                                                    key = str(i) + '_' + str(j))
+                
+                # Вывод предложений с расстановкой слов в правильном порядке
+                elif task['task_type'] == 'set_word_order':
+                    task['task_result'][0] = st.multiselect('nolabel',
+                                                            options=task['task_text'],
+                                                            label_visibility="hidden",
+                                                            placeholder='Выберите слово из выпадающего списка',
+                                                            key = str(i))
 
                 else:
-                    # Вывод предложений с выбором 
+                    # Вывод предложений с выбором правильного слова
                     col1, col2 = st.columns(2)
                     with col1:
                         st.write(str(task['task_text']))
@@ -221,11 +230,16 @@ if st.session_state.generation_clicked:
 
             # Результат прохождения теста
             if st.session_state.result_clicked:
+                
                 st.session_state['default_lesson']['task_total'] = (st.session_state['default_lesson']['task_answer'] ==
                                                                     st.session_state['default_lesson']['task_result'])
 
                 st.balloons()
-                st.write(st.session_state['ex_gen'].result_interpretation(st.session_state['default_lesson']))
+                
+                result_info, result_comment, result_mistakes = st.session_state['ex_gen'].result_interpretation(st.session_state['default_lesson'])
+                st.write(result_info)
+                st.write(result_comment)
+                st.write(result_mistakes)
                 st.write('Расшифровка результатов в разрезе типов упражнений:')
                 st.dataframe(st.session_state['ex_gen'].show_result_by_task_type(st.session_state['default_lesson']))
                 st.write('Полная расшифровка результатов прохождения теста:')
@@ -244,19 +258,3 @@ if st.session_state.generation_clicked:
                     file_name='english_lesson_result.csv',
                     mime='text/csv',
                 )
-        
-# Дальнейший план:
-
-# 0. Сделать так, чтобы при замене пропуском нужного слова заменялся только нужный токен, а не все слова подряд
-# 1. Поэтапно блокировать возможность изменений в блоках
-# 2. Настроить expander для настроек, либо вывести их на боковую панель
-# 3. Дописать функции для упражнений, чтобы во всех можно было выбрать количество пропущенных слов
-# 4. Добавить настройку частей речи
-# 5. Добавить настройку вывода подсказок
-# 6. В задании с пропущенным словом сделать дополнительную подсказку, что это за часть речи
-# 7. Добавить страницу ученика (открыта по умолчанию, на ней только загрузка текста, осн.настройки и упражнения) и страницу учителя
-# На странице учителя открываются все выбранные предложения (полностью, т.е. ответ заранее известен), и для каждого можно выбрать:
-# тип упражнения, часть речи, кол-во пропущенных слов или конкретные слова
-# Добавить на страницу учителя возможность сохранить датасет после всех настроек и выгрузить в файл. На блок загрузки добавить опцию
-# "Загрузить готовый урок". Это фича, чтобы учитель мог у себя составить урок, и отправить его ученику, а он смог бы его запустить у себя
-
