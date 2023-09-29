@@ -1091,8 +1091,8 @@ class ExerciseGen():
     
     
     def create_default_lesson(self, df):
-        """Shuffle all rows in dataframe and save first row for each row_index for every unique sentense. So, each unique sentence will
-        have one random exercise. 
+        """Select exercise type for every sentence in dataframe. 
+        The algorithm tries to return a balanced number of exercises of each type.
         
         Parameters
         ---------- 
@@ -1103,9 +1103,49 @@ class ExerciseGen():
         pd.DataFrame with english exercises
         """
         
-        new_df = df[df['task_type'] != 'sent_with_no_exercises'].sample(frac=1).sort_values(by='row_num')
-        new_df = new_df.groupby('row_num').agg('first').reset_index()
-
+        # Old version
+        # Shuffle all rows in dataframe and save first row for each row_index for every unique sentense. 
+        # So, each unique sentence will have one random exercise. 
+        # new_df = df[df['task_type'] != 'sent_with_no_exercises'].sample(frac=1).sort_values(by='row_num')
+        # new_df = new_df.groupby('row_num').agg('first').reset_index()
+        
+        # New: returns exercise dataset with corrected exercise balance
+        # Fact exercise quantity 
+        q_task = len(df.loc[df['task_type'] != 'sent_with_no_exercises', 'row_num'].unique())
+        # Exercise types, array sorted from rare values to frequent
+        ex_types = list(df[df['task_type'] != 'sent_with_no_exercises']
+                        .groupby('task_type')['row_num']
+                        .agg('count')
+                        .reset_index()
+                        .sort_values(by='row_num')
+                        .reset_index(drop=True)
+                        ['task_type'])
+        
+        # Pointer to walk around the array in circles
+        pointer = 0
+        # Fact exercise counter
+        q_task_fact = 0
+        # Result dataframe
+        new_df = pd.DataFrame(columns=['row_num', 'raw', 'task_type', 'task_text', 'task_object', 'task_options', 
+                                       'task_answer', 'task_result', 'task_description', 'task_total'])
+        
+        # Fill dataframe
+        while q_task_fact < q_task:
+            new_task = df[(~df['row_num'].isin(new_df['row_num'].unique())) & (df['task_type']==ex_types[pointer])].head(1)
+            # If exercise is possible, add it to new_df. Or move pointer and add exercise with other type
+            if len(new_task) != 0:
+                new_df = pd.concat([new_df, new_task], ignore_index=True)
+                q_task_fact += 1
+            # Exception, when no one new variant left, end cycle
+            else:
+                new_tasks = df[(~df['row_num'].isin(new_df['row_num'].unique())) & (df['task_type'].isin(ex_types))]
+                if len(new_tasks) == 0:
+                    q_task_fact = q_task
+            if pointer == len(ex_types)-1:
+                pointer = 0
+            else:
+                pointer += 1
+        
         df_with_no_exer = df[~df['row_num'].isin(new_df['row_num'].unique())]
         new_df = pd.concat([new_df, df_with_no_exer], ignore_index=True).sort_values('row_num').reset_index(drop=True)
 
@@ -1184,7 +1224,7 @@ class ExerciseGen():
         
         result_mistakes = ''
         if correct_cnt != all_cnt:
-            task_with_mistakes = str(df.loc[df['task_total'] == 0, 'task_description'].unique())
+            task_with_mistakes = str(df.loc[(df['task_total'] == 0) & (df['task_type'] != 'sent_with_no_exercises'), 'task_description'].unique())
             result_mistakes = ('Ошибки были в упражнениях следующих типов: ' + 
                                task_with_mistakes + 
                                '. В следующий раз попробуй сделать упор именно на такие упражнения')
